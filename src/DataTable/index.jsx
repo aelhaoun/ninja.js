@@ -1,76 +1,85 @@
-import React from 'react'
+import React from "react";
 
-import Pagination from './Pagination'
-import Row from './Row'
-import Search from './Search'
+import Pagination from "../pagination/Pagination";
+import List from "../list/List";
+import Search from "../search/Search";
 
 class DataTable extends React.Component {
-  state = {
-    rows: this.props.rows,
-    currentPageNumber: 0,
-    totalNumberOfPages: this.calculateTotalNumberOfPages(this.props.rows)
+  constructor(props) {
+    super(props);
+    this.state = {
+      rows: this.props.rows,
+      currentPageNumber: 0,
+      totalNumberOfPages: this.calculateTotalNumberOfPages(this.props.rows)
+    };
+    this.search = this.search.bind(this);
+    this.changeToPageNumber = this.changeToPageNumber.bind(this);
   }
 
   static defaultProps = {
     rowsPerPage: 40
-  }
+  };
 
   calculateTotalNumberOfPages(rows) {
-    const { rowsPerPage } = this.props
-    if (rowsPerPage == 0) return 0
-    return Math.ceil(rows.length / rowsPerPage)
+    const { rowsPerPage } = this.props;
+    if (rowsPerPage === 0) return 0;
+    return Math.ceil(rows.length / rowsPerPage);
   }
 
-  search(event) {
-    const { rows } = this.props
-    const text = event.target.value
-    let rowsFound = rows
+  search(text) {
+    const textLower = text.toLowerCase();
+    const { rows } = this.props;
 
-    if (text) {
-      rowsFound = rows.filter((row) => {
-        return row.name1.toLowerCase().search(text.toLowerCase()) > -1 ||
-         (row.email && row.email.toLowerCase().search(text.toLowerCase()) > -1)
-      })
-    }
+    const rowsFound = rows.filter(row => {
+      return (
+        row.name1.toLowerCase().indexOf(textLower) !== -1 ||
+        (row.email && row.email.toLowerCase().indexOf(textLower) !== -1)
+      );
+    });
 
     this.setState({
       rows: rowsFound,
       currentPageNumber: 0,
       totalNumberOfPages: this.calculateTotalNumberOfPages(rowsFound)
-    })
+    });
   }
 
   changeToPageNumber(pageNumber) {
-    this.setState({ currentPageNumber: pageNumber })
+    this.setState({ currentPageNumber: pageNumber });
   }
 
-  rowsInPageNumber(pageNumber) {
-    const { rowsPerPage } = this.props
-    const startIndex = pageNumber * rowsPerPage
-    return [startIndex, startIndex + rowsPerPage]
+  getCurrensRows() {
+    const { rowsPerPage } = this.props;
+    const { rows, currentPageNumber } = this.state;
+    const startIndex = currentPageNumber * rowsPerPage;
+    return rows.slice(startIndex, startIndex + rowsPerPage).map(row => {
+      return {
+        id: row.per_id,
+        title: row.name1,
+        subtitle: row.email,
+        link: row.edit_path
+      };
+    });
   }
 
   render() {
-    const { rows, currentPageNumber, totalNumberOfPages } = this.state
-    const rowsToRender = rows
-      .map(row => <Row key={row.per_id} row={row} />)
-      .slice(...this.rowsInPageNumber(currentPageNumber))
+    const { totalNumberOfPages, currentPageNumber } = this.state;
+    const currentRows = this.getCurrensRows();
 
-    return(
+    return (
       <div>
-        <Search onSearch={this.search.bind(this)} />
-        <table>
-          <tbody>
-            { rowsToRender }
-          </tbody>
-        </table>
-        <Pagination
-          currentPageNumber={currentPageNumber}
-          totalNumberOfPages={totalNumberOfPages}
-          onChange={this.changeToPageNumber.bind(this)} />
+        <Search onSearch={this.search} />
+        {currentRows.length > 0 && <List currentRows={currentRows} />}
+        {totalNumberOfPages > 0 && (
+          <Pagination
+            currentPageNumber={currentPageNumber}
+            totalNumberOfPages={totalNumberOfPages}
+            paginate={this.changeToPageNumber}
+          />
+        )}
       </div>
-    )
+    );
   }
 }
 
-export default DataTable
+export default DataTable;
